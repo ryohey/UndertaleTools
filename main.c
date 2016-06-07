@@ -17,6 +17,10 @@
 #define readBytes(__VAR__, __NUM__, __FILE__) \
     readTarray(char, __VAR__, __NUM__, __FILE__)
 
+#define readBytesA(__VAR__, __SIZE__, __FILE__) \
+    char *__VAR__ = (char *)malloc(__SIZE__);
+    fread(__VAR__, sizeof(__TYPE__), __SIZE__, __FILE__);\
+
 #define read32(__VAR__, __FILE__) \
     readT(uint32_t, __VAR__, __FILE__)
 
@@ -56,11 +60,14 @@ int main(int argc, char *argv[]) {
             FILE *stringFile = fopen(filename, "wb");
 
             char chunkName[4];
+            uint32_t totalSize;
             while (fread(chunkName, 4, 1, file) > 0) {
                 read32(chunkSize, file);
                 long chunkTop = ftell(file);
                 long chunkLast = chunkTop + chunkSize;
+                fprintf(stdout, "%s: %ld\n", chunkName, chunkSize);
                 if (strcmp(chunkName, "FORM") == 0) {
+                    totalSize = chunkSize;
                 } else {
                     if (strcmp(chunkName, "STRG") == 0) {
                         read32(entryNum, file);
@@ -78,10 +85,12 @@ int main(int argc, char *argv[]) {
                             fseek(file, 1, SEEK_CUR); // 1 byte margin between strings 
                         }
 
+                        fseek(file, chunkLast, SEEK_SET);
                     } else if (strcmp(chunkName, "TXTR") == 0) {
                         read32(entryNum, file);
                         fprintf(stdout, "%ld texture files\n", entryNum);
 
+                        fseek(file, chunkLast, SEEK_SET);
                     } else if (strcmp(chunkName, "AUDO") == 0) {
                         read32(entryNum, file);
                         fprintf(stdout, "%ld audio files\n", entryNum);
@@ -94,12 +103,14 @@ int main(int argc, char *argv[]) {
                             readBytes(itemBuf, entrySize, file);
                             writeToFile(itemBuf, entrySize, "%s/%d.wav", outdir, i);
                         }
+
+                        fseek(file, chunkLast, SEEK_SET);
                     } else {
-                        readBytes(itemBuf, chunkSize, file);
+                        readBytesA(itemBuf, chunkSize, file); // なぜかここでクラッシュする
+                        free(itemBuf);
+                        //fseek(file, chunkSize, SEEK_CUR);
                         //writeToFile(itemBuf, chunkSize, "%s/%s", outdir, chunkName);
                     }
-
-                    fseek(file, chunkLast, SEEK_SET);
                 }
             }
             break;
