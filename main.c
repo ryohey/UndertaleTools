@@ -70,6 +70,11 @@ static void usage(void) {
 }
 
 typedef struct {
+    char name[4];
+    uint32_t size;
+} Chunk;
+
+typedef struct {
     uint32_t padding;
     uint32_t offset;
 } TextureAddress;
@@ -124,16 +129,21 @@ int main(int argc, char *argv[]) {
             chmod("output", 0755);
             chdir("./output");
 
-            char chunkName[5];
-            chunkName[4] = '\0';
-            uint32_t totalSize;
-            while (fread(chunkName, 1, 4, file) > 0) {
-                read32(chunkSize, file);
-                long chunkLast = ftell(file) + chunkSize;
-                fprintf(stdout, "(%ld) %s: %u\n", ftell(file), chunkName, chunkSize);
+            while (1) {
+                Chunk chunk;
+                if (fread(&chunk, sizeof(Chunk), 1, file) != 1) {
+                    break;
+                }
+
+                char chunkName[5];
+                memcpy(chunkName, chunk.name, 4);
+                chunkName[4] = '\0';
+
+                long chunkLast = ftell(file) + chunk.size;
+                fprintf(stdout, "(%ld) %s: %u\n", ftell(file), chunkName, chunk.size);
 
                 if (strcmp(chunkName, "FORM") == 0) {
-                    totalSize = chunkSize;
+                    uint32_t totalSize = chunk.size;
                 } else {
                     if (strcmp(chunkName, "STRG") == 0) {
                         FILE *stringFile = fopen("string.txt", "wb");
@@ -277,7 +287,7 @@ int main(int argc, char *argv[]) {
                         fseek(file, chunkLast, SEEK_SET);
                     } else {
                         // skip chunk
-                        fseek(file, chunkSize, SEEK_CUR);
+                        fseek(file, chunk.size, SEEK_CUR);
                     }
                 }
             }
