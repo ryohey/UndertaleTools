@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <string.h>
+#include <sys/stat.h>
 
 #define readT(__TYPE__, __VAR__, __FILE__) \
     __TYPE__ __VAR__;\
@@ -18,8 +20,8 @@
     readTarray(char, __VAR__, __NUM__, __FILE__)
 
 #define readBytesA(__VAR__, __SIZE__, __FILE__) \
-    char *__VAR__ = (char *)malloc(__SIZE__);
-    fread(__VAR__, sizeof(__TYPE__), __SIZE__, __FILE__);\
+    char *__VAR__ = (char *)malloc(__SIZE__);\
+    fread(__VAR__, sizeof(char), __SIZE__, __FILE__);\
 
 #define read32(__VAR__, __FILE__) \
     readT(uint32_t, __VAR__, __FILE__)
@@ -40,9 +42,13 @@ static void usage(void) {
     exit(1);
 }
 
+typedef struct {
+    uint32_t padding;
+    uint32_t offset;
+} TextureAddress;
+
 int main(int argc, char *argv[]) {
     int ch;
-    char *outdir = "output";
     while ((ch = getopt(argc, argv, "a:e:")) != -1) {
         switch (ch) {
         case 'a':
@@ -55,23 +61,27 @@ int main(int argc, char *argv[]) {
                 exit(1);
             }
 
-            char filename[100];
-            sprintf(filename, "%s/string.txt", outdir);
-            FILE *stringFile = fopen(filename, "wb");
+            mkdir("output", 0755);
+            chmod("output", 0755);
+            chdir("./output");
 
-            char chunkName[4];
+            char filename[100];
+            FILE *stringFile = fopen("string.txt", "wb");
+
+            char chunkName[5];
+            chunkName[4] = '\0';
             uint32_t totalSize;
-            while (fread(chunkName, 4, 1, file) > 0) {
+            while (fread(chunkName, 1, 4, file) > 0) {
                 read32(chunkSize, file);
-                long chunkTop = ftell(file);
-                long chunkLast = chunkTop + chunkSize;
-                fprintf(stdout, "%s: %ld\n", chunkName, chunkSize);
+                long chunkLast = ftell(file) + chunkSize;
+                fprintf(stdout, "%s: %u\n", chunkName, chunkSize);
+
                 if (strcmp(chunkName, "FORM") == 0) {
                     totalSize = chunkSize;
                 } else {
                     if (strcmp(chunkName, "STRG") == 0) {
                         read32(entryNum, file);
-                        fprintf(stdout, "%ld texts\n", entryNum);
+                        fprintf(stdout, "%u texts\n", entryNum);
 
                         read32array(entryOffsets, entryNum, file);
 
@@ -87,28 +97,50 @@ int main(int argc, char *argv[]) {
 
                         fseek(file, chunkLast, SEEK_SET);
                     } else if (strcmp(chunkName, "TXTR") == 0) {
-                        read32(entryNum, file);
-                        fprintf(stdout, "%ld texture files\n", entryNum);
+                        mkdir("texture", 0755);
+                        chmod("texture", 0755);
+                        chdir("./texture");
 
+                        read32(entryNum, file);
+                        fprintf(stdout, "%u texture files\n", entryNum);
+
+                        read32array(entryOffsets, entryNum, file);
+                        readTarray(TextureAddress, addresses, entryNum, file);
+
+                        // 最後のテクスチャ (entryNum - 1 番目) が読み込めない 仕様？
+                        for (int i = 0; i < entryNum - 1; i++) {
+                            TextureAddress a = addresses[i];
+                            TextureAddress b = addresses[i + 1];
+                            uint32_t entrySize = b.offset - a.offset;
+                            readBytes(itemBuf, entrySize, file);
+                            writeToFile(itemBuf, entrySize, "%d.png", i);
+                        }
+
+                        chdir("..");
                         fseek(file, chunkLast, SEEK_SET);
                     } else if (strcmp(chunkName, "AUDO") == 0) {
+                        mkdir("audio", 0755);
+                        chmod("audio", 0755);
+                        chdir("./audio");
+
                         read32(entryNum, file);
-                        fprintf(stdout, "%ld audio files\n", entryNum);
+                        fprintf(stdout, "%u audio files\n", entryNum);
 
                         read32array(entryOffsets, entryNum, file);
 
-                        for (int i = 0; i < entryNum - 1; i++) {
+                        for (int i = 0; i < entryNum; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             read32(entrySize, file);
                             readBytes(itemBuf, entrySize, file);
-                            writeToFile(itemBuf, entrySize, "%s/%d.wav", outdir, i);
+                            writeToFile(itemBuf, entrySize, "%d.wav", i);
                         }
 
+                        chdir("..");
                         fseek(file, chunkLast, SEEK_SET);
                     } else {
-                        readBytesA(itemBuf, chunkSize, file); // なぜかここでクラッシュする
-                        free(itemBuf);
-                        //fseek(file, chunkSize, SEEK_CUR);
+                        //readBytesA(itemBuf, chunkSize, file); // なぜかここでクラッシュする
+                        //free(itemBuf);
+                        fseek(file, chunkSize, SEEK_CUR);
                         //writeToFile(itemBuf, chunkSize, "%s/%s", outdir, chunkName);
                     }
                 }
