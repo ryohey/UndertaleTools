@@ -64,6 +64,11 @@
     free(bytes);\
 }
 
+#define readStringAt(__VAR__, __OFFSET__, __FILE__) \
+    char __VAR__[1000];\
+    fseek(__FILE__, __OFFSET__, SEEK_SET);\
+    fscanf(__FILE__, "%s", __VAR__);
+
 static void usage(void) {
     fprintf(stderr, "usage: gmspack [-ae] [file]\n");
     exit(1);
@@ -197,6 +202,7 @@ int main(int argc, char *argv[]) {
                     break;
                 }
 
+                // add string terminater
                 char chunkName[5];
                 memcpy(chunkName, chunk.name, 4);
                 chunkName[4] = '\0';
@@ -278,15 +284,7 @@ int main(int argc, char *argv[]) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Sprite, sprite, file);
                             read32array(textureAddresses, sprite.textureCount, file);
-
-                            // read unknown bytes
-                            long remainSize = entryOffsets[i + 1] - ftell(file);
-                            readBytes(unknown, remainSize, file);
-
-                            // read sprite name
-                            fseek(file, sprite.nameOffset, SEEK_SET);
-                            char spriteName[1000];
-                            fscanf(file, "%s", spriteName);
+                            readStringAt(spriteName, sprite.nameOffset, file);
 
                             fprintf(spriteFile, "\"%s\",%u,%u,%u,%u,%u,%u,%u\n", 
                                 spriteName, 
@@ -316,13 +314,8 @@ int main(int argc, char *argv[]) {
                             readT(Font, font, file);
                             read32array(glyphOffsets, font.glyphCount, file);
                             
-                            fseek(file, font.fileNameOffset, SEEK_SET);
-                            char fileName[1000];
-                            fscanf(file, "%s", fileName);
-                            
-                            fseek(file, font.nameOffset, SEEK_SET);
-                            char name[1000];
-                            fscanf(file, "%s", name);
+                            readStringAt(fileName, font.fileNameOffset, file);
+                            readStringAt(name, font.nameOffset, file);
 
                             fprintf(fontFile, "\"%s\",\"%s\",%u\n", fileName, name, font.pointSize);
 
