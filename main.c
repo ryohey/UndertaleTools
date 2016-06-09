@@ -5,6 +5,10 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#if (defined(_WIN32) || defined(__WIN32__))
+#define mkdir(A, B) mkdir(A)
+#endif
+
 #define readT(__TYPE__, __VAR__, __FILE__) \
     __TYPE__ __VAR__;\
     fread(&__VAR__, sizeof(__TYPE__), 1, __FILE__);\
