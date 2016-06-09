@@ -112,6 +112,68 @@ typedef struct {
     uint16_t unknown;
 } Glyph;
 
+typedef struct {
+    uint32_t nameOffset;
+    uint32_t unknown[3];
+    uint32_t textureAddress;
+} Background;
+
+typedef struct {
+    uint32_t nameOffset;
+    uint32_t id;
+} ScriptDefinition;
+
+typedef struct {
+    uint32_t nameOffset;
+    uint32_t spriteIndex;
+} GameObjectDefinition;
+
+typedef struct {
+    uint32_t nameOffset;
+    uint32_t unknown1;
+    uint32_t width;
+    uint32_t height;
+    uint32_t unknown2;
+    uint32_t unknown3;
+    uint32_t argb;
+    char unknown4[60];
+    // background offset list?
+    // view offset list?
+    // game object list ? 
+} Room;
+
+typedef struct {
+    uint32_t x;
+    uint32_t y;
+    uint32_t id;
+    uint32_t unknown1;
+    uint32_t unknown2;
+    float scaleX;
+    float scaleY;
+    float tint;
+    uint32_t unknown3;
+} GameObject;
+
+typedef struct {
+    uint32_t x;
+    uint32_t y;
+    uint32_t id;
+    uint32_t sourceX;
+    uint32_t sourceY;
+    uint32_t width;
+    uint32_t height;
+    uint32_t unknown1;
+    uint32_t unknown2;
+    float scaleX;
+    float scaleY;
+    float tint;
+} Tile;
+
+typedef struct {
+    uint32_t nameOffset;
+    uint32_t size;
+} Script;
+
 int main(int argc, char *argv[]) {
     int ch;
     while ((ch = getopt(argc, argv, "a:e:")) != -1) {
