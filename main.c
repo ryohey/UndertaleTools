@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/stat.h>
+#include "structs.h"
 
 #if (defined(_WIN32) || defined(__WIN32__))
 #define mkdir(A, B) mkdir(A)
@@ -74,110 +75,16 @@ static void usage(void) {
     exit(1);
 }
 
-typedef struct {
-    char name[4];
-    uint32_t size;
-} Chunk;
-
-typedef struct {
-    uint32_t padding;
-    uint32_t offset;
-} TextureAddress;
-
-typedef struct {
-    uint32_t nameOffset;
-    uint32_t width;
-    uint32_t height;
-    uint32_t left;
-    uint32_t right;
-    uint32_t bottom;
-    uint32_t top;
-    char unknown[20];
-    uint32_t xOrigin;
-    uint32_t yOrigin;
-    uint32_t textureCount;
-} Sprite;
-
-typedef struct {
-    uint32_t fileNameOffset;
-    uint32_t nameOffset;
-    uint32_t pointSize;
-    char unknown[28];
-    uint32_t glyphCount;
-} Font;
-
-typedef struct {
-    uint8_t keyCode;
-    uint16_t x;
-    uint16_t y;
-    uint16_t width;
-    uint16_t height;
-    uint16_t shift;
-    uint16_t offset;
-    uint16_t unknown;
-} Glyph;
-
-typedef struct {
-    uint32_t nameOffset;
-    uint32_t unknown[3];
-    uint32_t textureAddress;
-} Background;
-
-typedef struct {
-    uint32_t nameOffset;
-    uint32_t id;
-} ScriptDefinition;
-
-typedef struct {
-    uint32_t nameOffset;
-    uint32_t spriteIndex;
-} GameObjectDefinition;
-
-typedef struct {
-    uint32_t nameOffset;
-    uint32_t unknown1;
-    uint32_t width;
-    uint32_t height;
-    uint32_t unknown2;
-    uint32_t unknown3;
-    uint32_t argb;
-    char unknown4[60];
-    // background offset list?
-    // view offset list?
-    // game object list ? 
-} Room;
-
-typedef struct {
-    uint32_t x;
-    uint32_t y;
-    uint32_t id;
-    uint32_t unknown1;
-    uint32_t unknown2;
-    float scaleX;
-    float scaleY;
-    float tint;
-    uint32_t unknown3;
-} GameObject;
-
-typedef struct {
-    uint32_t x;
-    uint32_t y;
-    uint32_t id;
-    uint32_t sourceX;
-    uint32_t sourceY;
-    uint32_t width;
-    uint32_t height;
-    uint32_t unknown1;
-    uint32_t unknown2;
-    float scaleX;
-    float scaleY;
-    float tint;
-} Tile;
-
-typedef struct {
-    uint32_t nameOffset;
-    uint32_t size;
-} Script;
+static void dump(char *bytes, long size) {
+    fprintf(stdout, "========");
+    for (long i = 0; i < size; i++) {
+        if (i % 8 == 0) {
+            fprintf(stdout, "\n");
+        }
+        fprintf(stdout, "%d\t", bytes[i]);
+    }
+    fprintf(stdout, "\n========\n");
+}
 
 int main(int argc, char *argv[]) {
     int ch;
@@ -196,6 +103,9 @@ int main(int argc, char *argv[]) {
             chmod("output", 0755);
             chdir("./output");
 
+            mkdir("chunk", 0755);
+            chmod("chunk", 0755);
+
             while (1) {
                 Chunk chunk;
                 if (fread(&chunk, sizeof(Chunk), 1, file) != 1) {
@@ -206,9 +116,9 @@ int main(int argc, char *argv[]) {
                 char chunkName[5];
                 memcpy(chunkName, chunk.name, 4);
                 chunkName[4] = '\0';
-
-                long chunkLast = ftell(file) + chunk.size;
-                fprintf(stdout, "(%ld) %s: %u\n", ftell(file), chunkName, chunk.size);
+                long chunkTop = ftell(file);
+                long chunkLast = chunkTop + chunk.size;
+                fprintf(stdout, "(%ld) %s: %u\n", chunkTop, chunkName, chunk.size);
 
                 if (strcmp(chunkName, "FORM") == 0) {
                     uint32_t totalSize = chunk.size;
@@ -220,7 +130,7 @@ int main(int argc, char *argv[]) {
                         read32array(entryOffsets, entryNum, file);
                         fprintf(stdout, "%u texts\n", entryNum);
 
-                        for (int i = 0; i < entryNum - 1; i++) {
+                        for (int i = 0; i < entryNum; i++) {
                             read32(entrySize, file);
 
                             readBytes(itemBuf, entrySize, file);
@@ -284,13 +194,14 @@ int main(int argc, char *argv[]) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Sprite, sprite, file);
                             read32array(textureAddresses, sprite.textureCount, file);
+                            //fprintf(stdout, "current: %u, name: %u, remain: %ld\n", ftell(file), sprite.nameOffset, entryOffsets[i + 1] - ftell(file));
                             readStringAt(spriteName, sprite.nameOffset, file);
 
                             fprintf(spriteFile, "\"%s\",%u,%u,%u,%u,%u,%u,%u\n", 
                                 spriteName, 
-                                sprite.width, sprite.height, 
-                                sprite.left, sprite.top, 
-                                sprite.right, sprite.bottom, 
+                                sprite.size.width, sprite.size.height, 
+                                sprite.bounds.left, sprite.bounds.top, 
+                                sprite.bounds.right, sprite.bounds.bottom, 
                                 sprite.textureCount);
                         }
 
@@ -309,7 +220,7 @@ int main(int argc, char *argv[]) {
 
                         fprintf(fontFile, "fileName,name,pointSize\n");
 
-                        for (int i = 0; i < entryNum - 1; i++) {
+                        for (int i = 0; i < entryNum; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Font, font, file);
                             read32array(glyphOffsets, font.glyphCount, file);
@@ -322,16 +233,12 @@ int main(int argc, char *argv[]) {
                             // read glyph
 
                             openFile(glyphFile, "wb", "%d.csv", i);
-                            fprintf(glyphFile, "keyCode,x,y,width,height,shift,offset,unknown\n");
+                            GlyphPrintCSVHeader(glyphFile);
 
                             for (int n = 0; n < font.glyphCount; n++) {
                                 fseek(file, glyphOffsets[n], SEEK_SET);
                                 readT(Glyph, glyph, file);
-                                fprintf(glyphFile, "%u,%u,%u,%u,%u,%u,%u,%u\n", 
-                                    glyph.keyCode, 
-                                    glyph.x, glyph.y, 
-                                    glyph.width, glyph.height, 
-                                    glyph.shift, glyph.offset, glyph.unknown);
+                                GlyphPrintCSV(glyphFile, glyph);
                             }
 
                             fclose(glyphFile);
@@ -340,9 +247,71 @@ int main(int argc, char *argv[]) {
                         fclose(fontFile);
                         chdir("..");
                         fseek(file, chunkLast, SEEK_SET);
+                    } else if (strcmp(chunkName, "ROOM") == 0) {
+                        mkdir("room", 0755);
+                        chmod("room", 0755);
+                        chdir("./room");
+
+                        read32(entryNum, file);
+                        read32array(entryOffsets, entryNum, file);
+                        fprintf(stdout, "%u rooms\n", entryNum);
+
+                        for (int i = 0; i < entryNum; i++) {
+                            fseek(file, entryOffsets[i], SEEK_SET);
+                            readT(Room, room, file);
+
+                            fprintf(stdout, "c %d next %u\n", ftell(file), entryOffsets[i + 1]);
+
+                            read32(bgNum, file);
+                            read32array(bgOffsets, bgNum, file);
+                            fprintf(stdout, "bg: %u\n", bgNum); 
+                            fprintf(stdout, "c %d\n", ftell(file));
+
+                            read32(viewNum, file);
+                            read32array(viewOffsets, viewNum, file);
+                            fprintf(stdout, "view: %u\n", viewNum); 
+                            fprintf(stdout, "c %d\n", ftell(file));
+
+                            read32(objNum, file);
+                            read32array(objOffsets, objNum, file);
+                            fprintf(stdout, "objNum: %u\n", objNum); 
+                            fprintf(stdout, "c %d\n", ftell(file));
+
+                            // read32(tileNum, file);
+                            // fprintf(stdout, "tileNum: %u\n", tileNum); 
+                            // read32array(tileOffsets, tileNum, file);
+                            // fprintf(stdout, "c %d\n", ftell(file));
+
+
+                            // for (int n = 0; n < bgNum; n++) {
+                            //     fseek(file, bgOffsets[n], SEEK_SET);
+                            //     readT(Background, bg, file);
+                            //     fprintf(stdout, "bg: %u %u %u %u,%u %u %u\n", 
+                            //         bg.isEnabled, bg.unknown, bg.id, 
+                            //         bg.x, bg.y, 
+                            //         bg.isTileX, bg.isTileY); 
+                            // }
+
+                            for (int n = 0; n < viewNum; n++) {
+                                fseek(file, viewOffsets[n], SEEK_SET);
+                                readT(View, v, file);
+                                fprintf(stdout, "view: %u %u,%u %ux%u %u,%u %ux%u\n", 
+                                    v.isEnabled, 
+                                    v.position.x, v.position.y,
+                                    v.size.width, v.size.height,
+                                    v.portPosition.x, v.portPosition.y,
+                                    v.portSize.width, v.portSize.height); 
+                            }
+
+                            readStringAt(name, room.nameOffset, file);
+                        }
+
+                        chdir("..");
+                        fseek(file, chunkLast, SEEK_SET);
                     } else {
-                        // skip chunk
-                        fseek(file, chunk.size, SEEK_CUR);
+                        chdir("./chunk");
+                        copyToFile(file, chunk.size, "%s.chunk", chunkName);
+                        chdir("..");
                     }
                 }
             }
