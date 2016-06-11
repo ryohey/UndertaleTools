@@ -67,9 +67,9 @@
 
 // the caller must free() the returnd string
 #define readStringAt(__VAR__, __OFFSET__, __FILE__) \
-    char *__VAR__ = (char *)malloc(1000);\
+    char __VAR__[10000];\
     fseek(__FILE__, __OFFSET__, SEEK_SET);\
-    fscanf(__FILE__, "%ms", &__VAR__);
+    fscanf(__FILE__, "%s", __VAR__);
 
 static void usage(void) {
     fprintf(stderr, "usage: gmspack [-ae] [file]\n");
@@ -83,6 +83,17 @@ static void dump(char *bytes, long size) {
             fprintf(stdout, "\n");
         }
         fprintf(stdout, "%d\t", bytes[i]);
+    }
+    fprintf(stdout, "\n========\n");
+}
+
+static void dump32uint(uint32_t *bytes, long size, int wrap) {
+    fprintf(stdout, "========");
+    for (long i = 0; i < size; i++) {
+        if (i % wrap == 0) {
+            fprintf(stdout, "\n");
+        }
+        fprintf(stdout, "%x\t", bytes[i]);
     }
     fprintf(stdout, "\n========\n");
 }
@@ -159,7 +170,6 @@ int main(int argc, char *argv[]) {
                             TextureAddress a = addresses[i];
                             TextureAddress b = addresses[i + 1];
                             uint32_t entrySize = b.offset - a.offset;
-                            fprintf(stdout, "unpacking textures (%u KB) %d/%u...\n", entrySize / 1024, i + 1, entryNum);
                             copyToFile(file, entrySize, "%d.png", i);
                         }
 
@@ -195,7 +205,6 @@ int main(int argc, char *argv[]) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Sprite, sprite, file);
                             read32array(textureAddresses, sprite.textureCount, file);
-                            //fprintf(stdout, "current: %u, name: %u, remain: %ld\n", ftell(file), sprite.nameOffset, entryOffsets[i + 1] - ftell(file));
                             readStringAt(spriteName, sprite.nameOffset, file);
 
                             fprintf(spriteFile, "\"%s\",%u,%u,%u,%u,%u,%u,%u\n", 
@@ -254,71 +263,67 @@ int main(int argc, char *argv[]) {
                         chdir("./room");
 
                         FILE *roomFile = fopen("room.csv", "wb");
+                        FILE *bgFile = fopen("background.csv", "wb");
+                        FILE *viewFile = fopen("view.csv", "wb");
+                        FILE *objFile = fopen("object.csv", "wb");
+
+                        RoomPrintCSVHeader(roomFile);
+                        BackgroundPrintCSVHeader(bgFile);
+                        ViewPrintCSVHeader(viewFile);
+                        RoomObjectPrintCSVHeader(objFile);
 
                         read32(entryNum, file);
                         read32array(entryOffsets, entryNum, file);
                         fprintf(stdout, "%u rooms\n", entryNum);
-                        
-                        RoomPrintCSVHeader(roomFile);
 
                         for (int i = 0; i < entryNum; i++) {
-                            fprintf(stdout, "%d / %d ", i, entryNum);
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Room, room, file);
-                            fprintf(stdout, "info:ok ");
+
+                            {
+                                read32(num, file);
+                                read32array(bgOffsets, num, file);
+                                readTarray(Background, arr, num, file);
+
+                                for (int n = 0; n < num; n++) {
+                                    BackgroundPrintCSV(bgFile, arr[n], i);
+                                }
+                            }
+
+                            {
+                                read32(num, file);
+                                read32array(viewOffsets, num, file);
+                                readTarray(View, arr, num, file);
+
+                                for (int n = 0; n < num; n++) {
+                                    ViewPrintCSV(viewFile, arr[n], i);
+                                }
+                            }
+
+                            {
+                                read32(num, file);
+                                read32array(objOffsets, num, file);
+                                readTarray(RoomObject, arr, num, file);
+
+                                for (int n = 0; n < num; n++) {
+                                    RoomObjectPrintCSV(objFile, arr[n], i);
+                                }
+                            }
                         
-                            fprintf(stdout, "name(%u)", room.nameOffset);
                             readStringAt(name, room.nameOffset, file);
-                            fprintf(stdout, ":ok ");
-                            fprintf(stdout, "caption(%u)", room.captionOffset);
                             readStringAt(caption, room.captionOffset, file);
-                            fprintf(stdout, ":ok ");
-                            RoomPrintCSV(roomFile, room, "name", "caption");
-                            fprintf(stdout, "write:ok\n");
-
-                            // read32(bgNum, file);
-                            // read32array(bgOffsets, bgNum, file);
-                            // fprintf(stdout, "bg: %u\n", bgNum); 
-                            // fprintf(stdout, "c %d\n", ftell(file));
-
-                            // read32(viewNum, file);
-                            // read32array(viewOffsets, viewNum, file);
-                            // fprintf(stdout, "view: %u\n", viewNum); 
-                            // fprintf(stdout, "c %d\n", ftell(file));
-
-                            // read32(objNum, file);
-                            // read32array(objOffsets, objNum, file);
-                            // fprintf(stdout, "objNum: %u\n", objNum); 
-                            // fprintf(stdout, "c %d\n", ftell(file));
+                            RoomPrintCSV(roomFile, room, name, caption);
 
                             // read32(tileNum, file);
                             // fprintf(stdout, "tileNum: %u\n", tileNum); 
                             // read32array(tileOffsets, tileNum, file);
                             // fprintf(stdout, "c %d\n", ftell(file));
-
-
-                            // for (int n = 0; n < bgNum; n++) {
-                            //     fseek(file, bgOffsets[n], SEEK_SET);
-                            //     readT(Background, bg, file);
-                            //     fprintf(stdout, "bg: %u %u %u %u,%u %u %u\n", 
-                            //         bg.isEnabled, bg.unknown, bg.id, 
-                            //         bg.x, bg.y, 
-                            //         bg.isTileX, bg.isTileY); 
-                            // }
-
-                            // for (int n = 0; n < viewNum; n++) {
-                            //     fseek(file, viewOffsets[n], SEEK_SET);
-                            //     readT(View, v, file);
-                            //     fprintf(stdout, "view: %u %u,%u %ux%u %u,%u %ux%u\n", 
-                            //         v.isEnabled, 
-                            //         v.position.x, v.position.y,
-                            //         v.size.width, v.size.height,
-                            //         v.portPosition.x, v.portPosition.y,
-                            //         v.portSize.width, v.portSize.height); 
-                            // }
                         }
 
                         fclose(roomFile);
+                        fclose(bgFile);
+                        fclose(viewFile);
+                        fclose(objFile);
                         chdir("..");
                         fseek(file, chunkLast, SEEK_SET);
                     } else {

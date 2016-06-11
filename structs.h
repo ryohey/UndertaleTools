@@ -15,7 +15,7 @@ extern void SizePrintJSON(FILE *file, Size s) {
 }
 
 typedef struct {
-    uint32_t x, y;
+    int32_t x, y;
 } Point;
 
 extern void PointPrintJSON(FILE *file, Point p) {
@@ -99,12 +99,27 @@ typedef struct {
 typedef struct {
     uint32_t isEnabled;
     uint32_t isForeground;
-    uint32_t id;
+    int32_t id;
     Point position;
-    Point tilePosition;
+    uint32_t isTileX;
+    uint32_t isTileY;
     Point speed;
     uint32_t isStretch;
 } Background;
+
+extern void BackgroundPrintCSVHeader(FILE *file) {
+    fprintf(file, "room,isEnabled,isForeground,id,positionX,positionY,isTileX,isTileY,speedX,speedY,isStretch\n");
+}
+
+extern void BackgroundPrintCSV(FILE *file, Background b, int room) {
+    fprintf(file, "%d,%u,%u,%d,%d,%d,%u,%u,%d,%d,%u\n", 
+        room,
+        b.isEnabled, b.isForeground, b.id, 
+        b.position.x, b.position.y, 
+        b.isTileX, b.isTileY,
+        b.speed.x, b.speed.y,
+        b.isStretch);
+}
 
 typedef struct {
     uint32_t nameOffset;
@@ -124,7 +139,7 @@ typedef struct {
     uint32_t isPersistent;
     Color color;
     uint32_t isDrawBackgroundColor;
-    uint32_t padding;
+    int32_t padding;
     uint32_t flags;
     uint32_t backgroundOffset;
     uint32_t viewOffset;
@@ -141,7 +156,7 @@ extern void RoomPrintCSVHeader(FILE *file) {
 }
 
 extern void RoomPrintCSV(FILE *file, Room r, char *name, char *caption) {
-    fprintf(file, "%s,%s,%u,%u,%u,%u,%d,%d,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%f,%f,%f\n",
+    fprintf(file, "%s,%s,%u,%u,%u,%u,%d,%d,%d,%d,%u,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%f,%f,%f\n",
         name, caption,
         r.size.width, r.size.height,
         r.speed, r.isPersistent,
@@ -155,13 +170,27 @@ extern void RoomPrintCSV(FILE *file, Room r, char *name, char *caption) {
 
 typedef struct {
     Point position;
-    uint32_t id;
-    uint32_t instanceId;
-    uint32_t createCodeId;
+    int32_t id;
+    int32_t instanceId;
+    int32_t createCodeId;
     PointF scale;
-    Color color;
+    uint32_t color; // argb
     float rotation;
 } RoomObject;
+
+extern void RoomObjectPrintCSVHeader(FILE *file) {
+    fprintf(file, "room,positionX,positionY,id,instanceId,createCodeId,scaleX,scaleY,color,rotation\n");
+}
+
+extern void RoomObjectPrintCSV(FILE *file, RoomObject o, int room) {
+    fprintf(file, "%d,%d,%d,%d,%d,%d,%f,%f,%x,%f\n", 
+        room,
+        o.position.x, o.position.y,
+        o.id, o.instanceId, o.createCodeId,
+        o.scale.x, o.scale.y,
+        o.color, o.rotation);
+}
+
 
 typedef struct {
     float density, restitution, group, linearDamping, angularDamping, unknown1, friction, unknown2, kinematic;
@@ -201,8 +230,31 @@ typedef struct {
     Size portSize;
     Point border;
     Point speed;
-    uint32_t objectId;
+    int32_t objectId;
 } View;
+
+extern void ViewPrintCSVHeader(FILE *file) {
+    fprintf(file, "room,isEnabled,positionX,positionY,sizeWidth,sizeHeight,portPositionX,portPositionY,portSizeWidth,portSizeHeight,borderX,borderY,speedX,speedY,objectId\n");
+}
+
+extern void ViewPrintCSV(FILE *file, View v, int room) {
+    fprintf(file, "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%d,%d,%d\n",
+        room,
+        v.isEnabled,
+        v.position.x,
+        v.position.y,
+        v.size.width,
+        v.size.height,
+        v.portPosition.x,
+        v.portPosition.y,
+        v.portSize.width,
+        v.portSize.height,
+        v.border.x,
+        v.border.y,
+        v.speed.x,
+        v.speed.y,
+        v.objectId);
+}
 
 typedef struct {
     uint32_t nameOffset;
