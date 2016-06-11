@@ -53,11 +53,19 @@ typedef struct {
     uint32_t isItalic;
     char antiAliasMode;
     char charset;
-    uint32_t texturePageId;
+    int32_t texturePageId;
     PointF scale;
-    char unknown[2];
-    uint32_t glyphCount;
+    uint16_t unknown;
 } Font;
+
+extern void FontPrintCSVHeader(FILE *file) {
+    fprintf(file, "fileName,name,pointSize,isBold,isItalic,antiAliasMode,charset,texturePageId,scaleX,scaleY,unknown\n");
+}
+
+extern void FontPrintCSV(FILE *file, Font f, char *fileName, char *name) {
+    fprintf(file, "\"%s\",\"%s\",%u,%u,%u,%u,%u,%d,%f,%f,%u\n", 
+        fileName, name, f.pointSize, f.isBold, f.isItalic, f.antiAliasMode, f.charset, f.texturePageId, f.scale.x, f.scale.y, f.unknown);
+}
 
 typedef struct {
     uint8_t keyCode;

@@ -218,30 +218,30 @@ int main(int argc, char *argv[]) {
                         chmod("font", 0755);
                         chdir("./font");
 
-                        FILE *fontFile = fopen("font.csv", "wb");
-
                         read32(entryNum, file);
                         read32array(entryOffsets, entryNum, file);
                         fprintf(stdout, "%u fonts\n", entryNum);
 
-                        fprintf(fontFile, "fileName,name,pointSize\n");
+                        FILE *fontFile = fopen("font.csv", "wb");
+                        FontPrintCSVHeader(fontFile);
 
                         for (int i = 0; i < entryNum; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Font, font, file);
-                            read32array(glyphOffsets, font.glyphCount, file);
+                            read32(glyphCount, file);
+                            read32array(glyphOffsets, glyphCount, file);
                             
                             readStringAt(fileName, font.fileNameOffset, file);
                             readStringAt(name, font.nameOffset, file);
 
-                            fprintf(fontFile, "\"%s\",\"%s\",%u\n", fileName, name, font.pointSize);
+                            FontPrintCSV(fontFile, font, fileName, name);
 
                             // read glyph
 
-                            openFile(glyphFile, "wb", "%d.csv", i);
+                            openFile(glyphFile, "wb", "glyph%d.csv", i);
                             GlyphPrintCSVHeader(glyphFile);
 
-                            for (int n = 0; n < font.glyphCount; n++) {
+                            for (int n = 0; n < glyphCount; n++) {
                                 fseek(file, glyphOffsets[n], SEEK_SET);
                                 readT(Glyph, glyph, file);
                                 GlyphPrintCSV(glyphFile, glyph);
