@@ -79,27 +79,23 @@ static void usage(void) {
     fprintf(stderr, "usage: gmspack [-ae] [file]\n");
     exit(1);
 }
-
-static void dump(char *bytes, long size) {
-    fprintf(stdout, "========");
-    for (long i = 0; i < size; i++) {
-        if (i % 8 == 0) {
-            fprintf(stdout, "\n");
-        }
-        fprintf(stdout, "%d\t", bytes[i]);
-    }
-    fprintf(stdout, "\n========\n");
+#define dumpT(__DATA__, __FORMAT__, __SIZE__, __WRAP__) {\
+    fprintf(stdout, "========");\
+    for (long i = 0; i < __SIZE__; i++) {\
+        if (i % __WRAP__ == 0) {\
+            fprintf(stdout, "\n");\
+        }\
+        fprintf(stdout, __FORMAT__, __DATA__[i]);\
+    }\
+    fprintf(stdout, "\n========\n");\
 }
 
-static void dump32uint(uint32_t *bytes, long size, int wrap) {
-    fprintf(stdout, "========");
-    for (long i = 0; i < size; i++) {
-        if (i % wrap == 0) {
-            fprintf(stdout, "\n");
-        }
-        fprintf(stdout, "%x\t", bytes[i]);
-    }
-    fprintf(stdout, "\n========\n");
+static void dump32uint(uint32_t *values, long size, int wrap) {
+    dumpT(values, "%x\t", size, wrap);
+}
+
+static void dumpFloat(float *values, long size, int wrap) {
+    dumpT(values, "%f\t", size, wrap);
 }
 
 int main(int argc, char *argv[]) {
@@ -377,6 +373,33 @@ int main(int argc, char *argv[]) {
                         }
 
                         fclose(objFile);
+                        fseek(file, chunkLast, SEEK_SET);
+                    } else if (strcmp(chunkName, "PATH") == 0) {
+                        readList(entryNum, entryOffsets, file);
+                        fprintf(stdout, "%u paths\n", entryNum);
+
+                        FILE *pathFile = fopen("path.csv", "wb");
+                        FILE *pointFile = fopen("path-point.csv", "wb");
+
+                        PathPrintCSVHeader(pathFile);
+                        PathPointPrintCSVHeader(pointFile);
+
+                        for (int i = 0; i < entryNum - 1; i++) {
+                            fseek(file, entryOffsets[i], SEEK_SET);
+                            readT(Path, path, file);
+
+                            read32(pointCount, file);
+                            readTarray(PathPoint, points, pointCount, file);
+                            for (int n = 0; n < pointCount; n++) {
+                                PathPointPrintCSV(pointFile, points[n], i);
+                            }
+                            
+                            readStringAt(name, path.nameOffset, file);
+                            PathPrintCSV(pathFile, path, name);
+                        }
+
+                        fclose(pathFile);
+                        fclose(pointFile);
                         fseek(file, chunkLast, SEEK_SET);
                     } else {
                         chdir("./chunk");

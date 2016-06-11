@@ -313,3 +313,30 @@ extern void SoundPrintCSVHeader(FILE *file) {
 extern void SoundPrintCSV(FILE *file, Sound s, char *name, char *fileType, char *fileName) {
     fprintf(file, "%s,%u,%s,%s,%u,%f,%f,%d,%d\n", name, s.flags, fileType, fileName, s.unknown, s.volume, s.pitch, s.groupID, s.audioID);
 }
+
+typedef struct {
+    uint32_t nameOffset;
+    uint32_t isSmooth;
+    uint32_t isClosed;
+    uint32_t precision;
+} Path;
+
+extern void PathPrintCSVHeader(FILE *file) {
+    fprintf(file, "name,isSmooth,isClosed,precision\n");
+}
+
+extern void PathPrintCSV(FILE *file, Path p, char *name) {
+    fprintf(file, "%s,%u,%u,%u\n", name, p.isSmooth, p.isClosed, p.precision);
+}
+
+typedef struct {
+    float x, y, speed;
+} PathPoint;
+
+extern void PathPointPrintCSVHeader(FILE *file) {
+    fprintf(file, "path,x,y,speed\n");
+}
+
+extern void PathPointPrintCSV(FILE *file, PathPoint p, int path) {
+    fprintf(file, "%d,%f,%f,%f\n", path, p.x, p.y, p.speed);
+}
