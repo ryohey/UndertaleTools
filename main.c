@@ -71,6 +71,10 @@
     fseek(__FILE__, __OFFSET__, SEEK_SET);\
     fscanf(__FILE__, "%s", __VAR__);
 
+#define readList(__SIZE_VAR__, __ARRAY_VAR__, __FILE__) \
+    read32(__SIZE_VAR__, __FILE__);\
+    read32array(__ARRAY_VAR__, __SIZE_VAR__, __FILE__);
+
 static void usage(void) {
     fprintf(stderr, "usage: gmspack [-ae] [file]\n");
     exit(1);
@@ -138,8 +142,8 @@ int main(int argc, char *argv[]) {
                     if (strcmp(chunkName, "STRG") == 0) {
                         FILE *stringFile = fopen("string.txt", "wb");
 
-                        read32(entryNum, file);
-                        read32array(entryOffsets, entryNum, file);
+                        readList(entryNum, entryOffsets, file);
+                        fprintf(stdout, "%u texts\n", entryNum);
 
                         for (int i = 0; i < entryNum; i++) {
                             read32(entrySize, file);
@@ -151,8 +155,6 @@ int main(int argc, char *argv[]) {
                             fseek(file, 1, SEEK_CUR); // 1 byte margin between strings 
                         }
 
-                        fprintf(stdout, "%u texts\n", entryNum);
-
                         fclose(stringFile);
                         fseek(file, chunkLast, SEEK_SET);
                     } else if (strcmp(chunkName, "TXTR") == 0) {
@@ -160,8 +162,7 @@ int main(int argc, char *argv[]) {
                         chmod("texture", 0755);
                         chdir("./texture");
 
-                        read32(entryNum, file);
-                        read32array(entryOffsets, entryNum, file);
+                        readList(entryNum, entryOffsets, file);
                         fprintf(stdout, "%u texture files\n", entryNum);
 
                         readTarray(TextureAddress, addresses, entryNum, file);
@@ -180,8 +181,7 @@ int main(int argc, char *argv[]) {
                         chmod("audio", 0755);
                         chdir("./audio");
 
-                        read32(entryNum, file);
-                        read32array(entryOffsets, entryNum, file);
+                        readList(entryNum, entryOffsets, file);
                         fprintf(stdout, "%u audio files\n", entryNum);
 
                         for (int i = 0; i < entryNum; i++) {
@@ -195,8 +195,7 @@ int main(int argc, char *argv[]) {
                     } else if (strcmp(chunkName, "SPRT") == 0) {
                         FILE *spriteFile = fopen("sprite.csv", "wb");
 
-                        read32(entryNum, file);
-                        read32array(entryOffsets, entryNum, file);
+                        readList(entryNum, entryOffsets, file);
                         fprintf(stdout, "%u sprites\n", entryNum);
 
                         SpritePrintCSVHeader(spriteFile);
@@ -204,8 +203,7 @@ int main(int argc, char *argv[]) {
                         for (int i = 0; i < entryNum - 1; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Sprite, sprite, file);
-                            read32(textureCount, file);
-                            read32array(textureAddresses, textureCount, file);
+                            readList(textureCount, textureAddresses, file);
                             readStringAt(spriteName, sprite.nameOffset, file);
 
                             SpritePrintCSV(spriteFile, sprite, spriteName);
@@ -218,8 +216,7 @@ int main(int argc, char *argv[]) {
                         chmod("font", 0755);
                         chdir("./font");
 
-                        read32(entryNum, file);
-                        read32array(entryOffsets, entryNum, file);
+                        readList(entryNum, entryOffsets, file);
                         fprintf(stdout, "%u fonts\n", entryNum);
 
                         FILE *fontFile = fopen("font.csv", "wb");
@@ -228,8 +225,7 @@ int main(int argc, char *argv[]) {
                         for (int i = 0; i < entryNum; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Font, font, file);
-                            read32(glyphCount, file);
-                            read32array(glyphOffsets, glyphCount, file);
+                            readList(glyphCount, glyphOffsets, file);
                             
                             readStringAt(fileName, font.fileNameOffset, file);
                             readStringAt(name, font.nameOffset, file);
@@ -270,8 +266,7 @@ int main(int argc, char *argv[]) {
                         RoomObjectPrintCSVHeader(objFile);
                         TilePrintCSVHeader(tileFile);
 
-                        read32(entryNum, file);
-                        read32array(entryOffsets, entryNum, file);
+                        readList(entryNum, entryOffsets, file);
                         fprintf(stdout, "%u rooms\n", entryNum);
 
                         for (int i = 0; i < entryNum; i++) {
@@ -279,8 +274,7 @@ int main(int argc, char *argv[]) {
                             readT(Room, room, file);
 
                             {
-                                read32(num, file);
-                                read32array(bgOffsets, num, file);
+                                readList(num, offsets, file);
                                 readTarray(Background, arr, num, file);
 
                                 for (int n = 0; n < num; n++) {
@@ -289,8 +283,7 @@ int main(int argc, char *argv[]) {
                             }
 
                             {
-                                read32(num, file);
-                                read32array(viewOffsets, num, file);
+                                readList(num, offsets, file);
                                 readTarray(View, arr, num, file);
 
                                 for (int n = 0; n < num; n++) {
@@ -299,8 +292,7 @@ int main(int argc, char *argv[]) {
                             }
 
                             {
-                                read32(num, file);
-                                read32array(objOffsets, num, file);
+                                readList(num, offsets, file);
                                 readTarray(RoomObject, arr, num, file);
 
                                 for (int n = 0; n < num; n++) {
@@ -309,8 +301,7 @@ int main(int argc, char *argv[]) {
                             }
                         
                             {
-                                read32(num, file);
-                                read32array(tileOffsets, num, file);
+                                readList(num, offsets, file);
                                 readTarray(Tile, arr, num, file);
 
                                 for (int n = 0; n < num; n++) {
