@@ -1,5 +1,5 @@
 typedef struct {
-    char a, r, g, b;
+    unsigned char a, r, g, b;
 } Color;
 
 extern void ColorPrintJSON(FILE *file, Color c) {
@@ -136,7 +136,21 @@ typedef struct {
     float metersPerPixel;
 } Room;
 
-extern void RoomPrintJSON(FILE *file, Room r, char *name, char *caption) {
+extern void RoomPrintCSVHeader(FILE *file) {
+    fprintf(file, "name,caption,sizeWidth,sizeHeight,speed,isPersistent,colorA,colorR,colorG,colorB,isDrawBackgroundColor,padding,flags,backgroundOffset,viewOffset,objectOffset,tileOffset,world,boundsLeft,boundsRight,boundsBottom,boundsTop,gravityX,gravityY,metersPerPixel\n");
+}
+
+extern void RoomPrintCSV(FILE *file, Room r, char *name, char *caption) {
+    fprintf(file, "%s,%s,%u,%u,%u,%u,%d,%d,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%f,%f,%f\n",
+        name, caption,
+        r.size.width, r.size.height,
+        r.speed, r.isPersistent,
+        r.color.a, r.color.r, r.color.g, r.color.b,
+        r.isDrawBackgroundColor, r.padding, r.flags,
+        r.backgroundOffset, r.viewOffset, r.objectOffset, r.tileOffset, r.world,
+        r.bounds.left, r.bounds.right, r.bounds.bottom, r.bounds.top,
+        r.gravity.x, r.gravity.y,
+        r.metersPerPixel);
 }
 
 typedef struct {
@@ -147,6 +161,25 @@ typedef struct {
     PointF scale;
     Color color;
     float rotation;
+} RoomObject;
+
+typedef struct {
+    float density, restitution, group, linearDamping, angularDamping, unknown1, friction, unknown2, kinematic;
+} ObjectPhysics;
+
+typedef struct {
+    uint32_t nameOffset;
+    uint32_t spriteId;
+    uint32_t isVisible;
+    uint32_t isSolid;
+    int depth;
+    uint32_t isPersistent;
+    int parentId;
+    int maskId;
+    uint32_t hasPhysics;
+    uint32_t isSensor;
+    uint32_t collisionShape;
+    ObjectPhysics physics;
 } GameObject;
 
 typedef struct {

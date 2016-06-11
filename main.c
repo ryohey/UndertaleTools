@@ -65,10 +65,11 @@
     free(bytes);\
 }
 
+// the caller must free() the returnd string
 #define readStringAt(__VAR__, __OFFSET__, __FILE__) \
-    char __VAR__[1000];\
+    char *__VAR__ = (char *)malloc(1000);\
     fseek(__FILE__, __OFFSET__, SEEK_SET);\
-    fscanf(__FILE__, "%s", __VAR__);
+    fscanf(__FILE__, "%ms", &__VAR__);
 
 static void usage(void) {
     fprintf(stderr, "usage: gmspack [-ae] [file]\n");
@@ -252,30 +253,43 @@ int main(int argc, char *argv[]) {
                         chmod("room", 0755);
                         chdir("./room");
 
+                        FILE *roomFile = fopen("room.csv", "wb");
+
                         read32(entryNum, file);
                         read32array(entryOffsets, entryNum, file);
                         fprintf(stdout, "%u rooms\n", entryNum);
+                        
+                        RoomPrintCSVHeader(roomFile);
 
                         for (int i = 0; i < entryNum; i++) {
+                            fprintf(stdout, "%d / %d ", i, entryNum);
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Room, room, file);
+                            fprintf(stdout, "info:ok ");
+                        
+                            fprintf(stdout, "name(%u)", room.nameOffset);
+                            readStringAt(name, room.nameOffset, file);
+                            fprintf(stdout, ":ok ");
+                            fprintf(stdout, "caption(%u)", room.captionOffset);
+                            readStringAt(caption, room.captionOffset, file);
+                            fprintf(stdout, ":ok ");
+                            RoomPrintCSV(roomFile, room, "name", "caption");
+                            fprintf(stdout, "write:ok\n");
 
-                            fprintf(stdout, "c %d next %u\n", ftell(file), entryOffsets[i + 1]);
+                            // read32(bgNum, file);
+                            // read32array(bgOffsets, bgNum, file);
+                            // fprintf(stdout, "bg: %u\n", bgNum); 
+                            // fprintf(stdout, "c %d\n", ftell(file));
 
-                            read32(bgNum, file);
-                            read32array(bgOffsets, bgNum, file);
-                            fprintf(stdout, "bg: %u\n", bgNum); 
-                            fprintf(stdout, "c %d\n", ftell(file));
+                            // read32(viewNum, file);
+                            // read32array(viewOffsets, viewNum, file);
+                            // fprintf(stdout, "view: %u\n", viewNum); 
+                            // fprintf(stdout, "c %d\n", ftell(file));
 
-                            read32(viewNum, file);
-                            read32array(viewOffsets, viewNum, file);
-                            fprintf(stdout, "view: %u\n", viewNum); 
-                            fprintf(stdout, "c %d\n", ftell(file));
-
-                            read32(objNum, file);
-                            read32array(objOffsets, objNum, file);
-                            fprintf(stdout, "objNum: %u\n", objNum); 
-                            fprintf(stdout, "c %d\n", ftell(file));
+                            // read32(objNum, file);
+                            // read32array(objOffsets, objNum, file);
+                            // fprintf(stdout, "objNum: %u\n", objNum); 
+                            // fprintf(stdout, "c %d\n", ftell(file));
 
                             // read32(tileNum, file);
                             // fprintf(stdout, "tileNum: %u\n", tileNum); 
@@ -292,20 +306,19 @@ int main(int argc, char *argv[]) {
                             //         bg.isTileX, bg.isTileY); 
                             // }
 
-                            for (int n = 0; n < viewNum; n++) {
-                                fseek(file, viewOffsets[n], SEEK_SET);
-                                readT(View, v, file);
-                                fprintf(stdout, "view: %u %u,%u %ux%u %u,%u %ux%u\n", 
-                                    v.isEnabled, 
-                                    v.position.x, v.position.y,
-                                    v.size.width, v.size.height,
-                                    v.portPosition.x, v.portPosition.y,
-                                    v.portSize.width, v.portSize.height); 
-                            }
-
-                            readStringAt(name, room.nameOffset, file);
+                            // for (int n = 0; n < viewNum; n++) {
+                            //     fseek(file, viewOffsets[n], SEEK_SET);
+                            //     readT(View, v, file);
+                            //     fprintf(stdout, "view: %u %u,%u %ux%u %u,%u %ux%u\n", 
+                            //         v.isEnabled, 
+                            //         v.position.x, v.position.y,
+                            //         v.size.width, v.size.height,
+                            //         v.portPosition.x, v.portPosition.y,
+                            //         v.portSize.width, v.portSize.height); 
+                            // }
                         }
 
+                        fclose(roomFile);
                         chdir("..");
                         fseek(file, chunkLast, SEEK_SET);
                     } else {
