@@ -269,3 +269,23 @@ typedef struct {
     uint32_t nameOffset;
     uint32_t size;
 } Script;
+
+typedef struct {
+    uint32_t nameOffset;
+    uint32_t flags;
+    uint32_t fileTypeOffset;
+    uint32_t fileNameOffset;
+    uint32_t unknown;
+    float volume;
+    float pitch;
+    int32_t groupID;
+    int32_t audioID;
+} Sound;
+
+extern void SoundPrintCSVHeader(FILE *file) {
+    fprintf(file, "nameOffset,flags,fileType,fileName,unknown,volume,pitch,groupID,audioID\n");
+}
+
+extern void SoundPrintCSV(FILE *file, Sound s, char *name, char *fileType, char *fileName) {
+    fprintf(file, "%s,%u,%s,%s,%u,%f,%f,%d,%d\n", name, s.flags, fileType, fileName, s.unknown, s.volume, s.pitch, s.groupID, s.audioID);
+}

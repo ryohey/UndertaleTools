@@ -321,6 +321,26 @@ int main(int argc, char *argv[]) {
                         fclose(tileFile);
                         chdir("..");
                         fseek(file, chunkLast, SEEK_SET);
+                    } else if (strcmp(chunkName, "SOND") == 0) {
+                        FILE *soundFile = fopen("sound.csv", "wb");
+
+                        readList(entryNum, entryOffsets, file);
+                        fprintf(stdout, "%u sounds\n", entryNum);
+
+                        SoundPrintCSVHeader(soundFile);
+
+                        for (int i = 0; i < entryNum - 1; i++) {
+                            fseek(file, entryOffsets[i], SEEK_SET);
+                            readT(Sound, sound, file);
+                            readStringAt(name, sound.nameOffset, file);
+                            readStringAt(fileType, sound.fileTypeOffset, file);
+                            readStringAt(fileName, sound.fileNameOffset, file);
+
+                            SoundPrintCSV(soundFile, sound, name, fileType, fileName);
+                        }
+
+                        fclose(soundFile);
+                        fseek(file, chunkLast, SEEK_SET);
                     } else {
                         chdir("./chunk");
                         copyToFile(file, chunk.size, "%s.chunk", chunkName);
