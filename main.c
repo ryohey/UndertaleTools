@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
                 chunkName[4] = '\0';
                 long chunkTop = ftell(file);
                 long chunkLast = chunkTop + chunk.size;
-                fprintf(stdout, "(%ld) %s: %u\n", chunkTop, chunkName, chunk.size);
+                fprintf(stdout, "%s (%u KB): ", chunkName, chunk.size / 1024);
 
                 if (strcmp(chunkName, "FORM") == 0) {
                     uint32_t totalSize = chunk.size;
@@ -140,7 +140,6 @@ int main(int argc, char *argv[]) {
 
                         read32(entryNum, file);
                         read32array(entryOffsets, entryNum, file);
-                        fprintf(stdout, "%u texts\n", entryNum);
 
                         for (int i = 0; i < entryNum; i++) {
                             read32(entrySize, file);
@@ -151,6 +150,8 @@ int main(int argc, char *argv[]) {
                             fputs("\n", stringFile);
                             fseek(file, 1, SEEK_CUR); // 1 byte margin between strings 
                         }
+
+                        fprintf(stdout, "%u texts\n", entryNum);
 
                         fclose(stringFile);
                         fseek(file, chunkLast, SEEK_SET);
@@ -166,10 +167,9 @@ int main(int argc, char *argv[]) {
                         readTarray(TextureAddress, addresses, entryNum, file);
 
                         // 最後のテクスチャ (entryNum - 1 番目) が読み込めない 仕様？
-                        for (int i = 0; i < entryNum - 1; i++) {
-                            TextureAddress a = addresses[i];
-                            TextureAddress b = addresses[i + 1];
-                            uint32_t entrySize = b.offset - a.offset;
+                        for (int i = 0; i < entryNum; i++) {
+                            uint32_t nextOffset = i < entryNum - 1 ? addresses[i + 1].offset : chunkLast;
+                            uint32_t entrySize = nextOffset - addresses[i].offset;
                             copyToFile(file, entrySize, "%d.png", i);
                         }
 
@@ -334,6 +334,8 @@ int main(int argc, char *argv[]) {
                         chdir("./chunk");
                         copyToFile(file, chunk.size, "%s.chunk", chunkName);
                         chdir("..");
+
+                        fprintf(stdout, "skip.\n");
                     }
                 }
             }
