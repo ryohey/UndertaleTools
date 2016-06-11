@@ -99,7 +99,6 @@ extern void BackgroundDefinitionPrintCSV(FILE *file, BackgroundDefinition b, cha
     fprintf(file, "%s,%u\n", name, b.textureAddress);
 }
 
-
 typedef struct {
     uint32_t isEnabled;
     uint32_t isForeground;
@@ -200,18 +199,34 @@ typedef struct {
 
 typedef struct {
     uint32_t nameOffset;
-    uint32_t spriteId;
+    int32_t spriteId;
     uint32_t isVisible;
     uint32_t isSolid;
-    int depth;
+    int32_t depth;
     uint32_t isPersistent;
-    int parentId;
-    int maskId;
+    int32_t parentId;
+    int32_t maskId;
     uint32_t hasPhysics;
     uint32_t isSensor;
     uint32_t collisionShape;
     ObjectPhysics physics;
 } GameObject;
+
+extern void GameObjectPrintCSVHeader(FILE *file) {
+    fprintf(file, "name,spriteId,isVisible,isSolid,depth,isPersistent,parentId,maskId,hasPhysics,isSensor,collisionShape,density,restitution,group,linearDamping,angularDamping,unknown1,friction,unknown2,kinematic\n");
+}
+
+extern void GameObjectPrintCSV(FILE *file, GameObject o, char *name) {
+    fprintf(file, "%s,%d,%u,%u,%d,%u,%d,%d,%u,%u,%u,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", 
+        name, o.spriteId, 
+        o.isVisible, o.isSolid, o.depth, o.isPersistent, 
+        o.parentId, o.maskId,
+        o.hasPhysics, o.isSensor,
+        o.collisionShape, 
+        o.physics.density, o.physics.restitution, o.physics.group, 
+        o.physics.linearDamping, o.physics.angularDamping, o.physics.unknown1, 
+        o.physics.friction, o.physics.unknown2, o.physics.kinematic);
+}
 
 typedef struct {
     Point position;

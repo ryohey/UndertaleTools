@@ -360,6 +360,24 @@ int main(int argc, char *argv[]) {
 
                         fclose(bgFile);
                         fseek(file, chunkLast, SEEK_SET);
+                    } else if (strcmp(chunkName, "OBJT") == 0) {
+                        FILE *objFile = fopen("object.csv", "wb");
+
+                        readList(entryNum, entryOffsets, file);
+                        fprintf(stdout, "%u objects\n", entryNum);
+
+                        GameObjectPrintCSVHeader(objFile);
+
+                        for (int i = 0; i < entryNum - 1; i++) {
+                            fseek(file, entryOffsets[i], SEEK_SET);
+                            readT(GameObject, obj, file);
+                            readStringAt(name, obj.nameOffset, file);
+
+                            GameObjectPrintCSV(objFile, obj, name);
+                        }
+
+                        fclose(objFile);
+                        fseek(file, chunkLast, SEEK_SET);
                     } else {
                         chdir("./chunk");
                         copyToFile(file, chunk.size, "%s.chunk", chunkName);
