@@ -191,7 +191,6 @@ extern void RoomObjectPrintCSV(FILE *file, RoomObject o, int room) {
         o.color, o.rotation);
 }
 
-
 typedef struct {
     float density, restitution, group, linearDamping, angularDamping, unknown1, friction, unknown2, kinematic;
 } ObjectPhysics;
@@ -213,14 +212,30 @@ typedef struct {
 
 typedef struct {
     Point position;
-    uint32_t id;
+    int32_t id;
     Point sourcePosition;
     Size size;
     uint32_t depth;
-    uint32_t instanceId;
+    int32_t instanceId;
     PointF scale;
-    Color color;
+    uint32_t color;
 } Tile;
+
+extern void TilePrintCSVHeader(FILE *file) {
+    fprintf(file, "room,x,y,id,sourcePositionX,sourcePositionY,width,height,depth,instanceId,scaleX,scaleY,color\n");
+}
+
+extern void TilePrintCSV(FILE *file, Tile o, int room) {
+    fprintf(file, "%d,%d,%d,%d,%d,%d,%u,%u,%u,%d,%f,%f,%x\n", 
+        room,
+        o.position.x, o.position.y,
+        o.id, 
+        o.sourcePosition.x, o.sourcePosition.y,
+        o.size.width, o.size.height,
+        o.depth, o.instanceId,
+        o.scale.x, o.scale.y,
+        o.color);
+}
 
 typedef struct {
     uint32_t isEnabled;

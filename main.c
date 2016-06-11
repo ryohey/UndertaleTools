@@ -266,11 +266,13 @@ int main(int argc, char *argv[]) {
                         FILE *bgFile = fopen("background.csv", "wb");
                         FILE *viewFile = fopen("view.csv", "wb");
                         FILE *objFile = fopen("object.csv", "wb");
+                        FILE *tileFile = fopen("tile.csv", "wb");
 
                         RoomPrintCSVHeader(roomFile);
                         BackgroundPrintCSVHeader(bgFile);
                         ViewPrintCSVHeader(viewFile);
                         RoomObjectPrintCSVHeader(objFile);
+                        TilePrintCSVHeader(tileFile);
 
                         read32(entryNum, file);
                         read32array(entryOffsets, entryNum, file);
@@ -310,20 +312,27 @@ int main(int argc, char *argv[]) {
                                 }
                             }
                         
+                            {
+                                read32(num, file);
+                                read32array(tileOffsets, num, file);
+                                readTarray(Tile, arr, num, file);
+                                fprintf(stdout, "%u tiles\n", num);
+
+                                for (int n = 0; n < num; n++) {
+                                    TilePrintCSV(tileFile, arr[n], i);
+                                }
+                            }
+                        
                             readStringAt(name, room.nameOffset, file);
                             readStringAt(caption, room.captionOffset, file);
                             RoomPrintCSV(roomFile, room, name, caption);
-
-                            // read32(tileNum, file);
-                            // fprintf(stdout, "tileNum: %u\n", tileNum); 
-                            // read32array(tileOffsets, tileNum, file);
-                            // fprintf(stdout, "c %d\n", ftell(file));
                         }
 
                         fclose(roomFile);
                         fclose(bgFile);
                         fclose(viewFile);
                         fclose(objFile);
+                        fclose(tileFile);
                         chdir("..");
                         fseek(file, chunkLast, SEEK_SET);
                     } else {
