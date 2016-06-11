@@ -134,10 +134,11 @@ int main(int argc, char *argv[]) {
                 chunkName[4] = '\0';
                 long chunkTop = ftell(file);
                 long chunkLast = chunkTop + chunk.size;
-                fprintf(stdout, "%s (%u KB): ", chunkName, chunk.size / 1024);
+                fprintf(stdout, "%s (%u KB @ %u): ", chunkName, chunk.size / 1024, chunkTop);
 
                 if (strcmp(chunkName, "FORM") == 0) {
                     uint32_t totalSize = chunk.size;
+                    fprintf(stdout, "%n");
                 } else {
                     if (strcmp(chunkName, "STRG") == 0) {
                         FILE *stringFile = fopen("string.txt", "wb");
@@ -340,6 +341,24 @@ int main(int argc, char *argv[]) {
                         }
 
                         fclose(soundFile);
+                        fseek(file, chunkLast, SEEK_SET);
+                    } else if (strcmp(chunkName, "BGND") == 0) {
+                        FILE *bgFile = fopen("background.csv", "wb");
+
+                        readList(entryNum, entryOffsets, file);
+                        fprintf(stdout, "%u backgrounds\n", entryNum);
+
+                        BackgroundDefinitionPrintCSVHeader(bgFile);
+
+                        for (int i = 0; i < entryNum - 1; i++) {
+                            fseek(file, entryOffsets[i], SEEK_SET);
+                            readT(BackgroundDefinition, bg, file);
+                            readStringAt(name, bg.nameOffset, file);
+
+                            BackgroundDefinitionPrintCSV(bgFile, bg, name);
+                        }
+
+                        fclose(bgFile);
                         fseek(file, chunkLast, SEEK_SET);
                     } else {
                         chdir("./chunk");

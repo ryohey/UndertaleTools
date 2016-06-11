@@ -87,9 +87,18 @@ extern void GlyphPrintCSV(FILE *file, Glyph g) {
 
 typedef struct {
     uint32_t nameOffset;
-    uint32_t padding[3];
+    uint32_t unknown[3];
     uint32_t textureAddress;
 } BackgroundDefinition;
+
+extern void BackgroundDefinitionPrintCSVHeader(FILE *file) {
+    fprintf(file, "name,textureAddress\n");
+}
+
+extern void BackgroundDefinitionPrintCSV(FILE *file, BackgroundDefinition b, char *name) {
+    fprintf(file, "%s,%u\n", name, b.textureAddress);
+}
+
 
 typedef struct {
     uint32_t isEnabled;
