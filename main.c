@@ -199,20 +199,16 @@ int main(int argc, char *argv[]) {
                         read32array(entryOffsets, entryNum, file);
                         fprintf(stdout, "%u sprites\n", entryNum);
 
-                        fprintf(spriteFile, "name,width,height,left,top,right,bottom,textureCount\n");
+                        SpritePrintCSVHeader(spriteFile);
 
                         for (int i = 0; i < entryNum - 1; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Sprite, sprite, file);
-                            read32array(textureAddresses, sprite.textureCount, file);
+                            read32(textureCount, file);
+                            read32array(textureAddresses, textureCount, file);
                             readStringAt(spriteName, sprite.nameOffset, file);
 
-                            fprintf(spriteFile, "\"%s\",%u,%u,%u,%u,%u,%u,%u\n", 
-                                spriteName, 
-                                sprite.size.width, sprite.size.height, 
-                                sprite.bounds.left, sprite.bounds.top, 
-                                sprite.bounds.right, sprite.bounds.bottom, 
-                                sprite.textureCount);
+                            SpritePrintCSV(spriteFile, sprite, spriteName);
                         }
 
                         fclose(spriteFile);
@@ -316,7 +312,6 @@ int main(int argc, char *argv[]) {
                                 read32(num, file);
                                 read32array(tileOffsets, num, file);
                                 readTarray(Tile, arr, num, file);
-                                fprintf(stdout, "%u tiles\n", num);
 
                                 for (int n = 0; n < num; n++) {
                                     TilePrintCSV(tileFile, arr[n], i);
