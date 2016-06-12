@@ -164,7 +164,6 @@ int main(int argc, char *argv[]) {
 
                         readTarray(TextureAddress, addresses, entryNum, file);
 
-                        // 最後のテクスチャ (entryNum - 1 番目) が読み込めない 仕様？
                         for (int i = 0; i < entryNum; i++) {
                             uint32_t nextOffset = i < entryNum - 1 ? addresses[i + 1].offset : chunkLast;
                             uint32_t entrySize = nextOffset - addresses[i].offset;
@@ -197,7 +196,7 @@ int main(int argc, char *argv[]) {
 
                         SpritePrintCSVHeader(spriteFile);
 
-                        for (int i = 0; i < entryNum - 1; i++) {
+                        for (int i = 0; i < entryNum; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Sprite, sprite, file);
                             readList(textureCount, textureAddresses, file);
@@ -326,7 +325,7 @@ int main(int argc, char *argv[]) {
 
                         SoundPrintCSVHeader(soundFile);
 
-                        for (int i = 0; i < entryNum - 1; i++) {
+                        for (int i = 0; i < entryNum; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Sound, sound, file);
                             readStringAt(name, sound.nameOffset, file);
@@ -346,7 +345,7 @@ int main(int argc, char *argv[]) {
 
                         BackgroundDefinitionPrintCSVHeader(bgFile);
 
-                        for (int i = 0; i < entryNum - 1; i++) {
+                        for (int i = 0; i < entryNum; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(BackgroundDefinition, bg, file);
                             readStringAt(name, bg.nameOffset, file);
@@ -364,7 +363,7 @@ int main(int argc, char *argv[]) {
 
                         GameObjectPrintCSVHeader(objFile);
 
-                        for (int i = 0; i < entryNum - 1; i++) {
+                        for (int i = 0; i < entryNum; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(GameObject, obj, file);
                             readStringAt(name, obj.nameOffset, file);
@@ -384,7 +383,7 @@ int main(int argc, char *argv[]) {
                         PathPrintCSVHeader(pathFile);
                         PathPointPrintCSVHeader(pointFile);
 
-                        for (int i = 0; i < entryNum - 1; i++) {
+                        for (int i = 0; i < entryNum; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Path, path, file);
 
@@ -400,6 +399,23 @@ int main(int argc, char *argv[]) {
 
                         fclose(pathFile);
                         fclose(pointFile);
+                        fseek(file, chunkLast, SEEK_SET);
+                    } else if (strcmp(chunkName, "SCPT") == 0) {
+                        readList(entryNum, entryOffsets, file);
+                        fprintf(stdout, "%u scripts\n", entryNum);
+
+                        FILE *scriptFile = fopen("script.csv", "wb");
+
+                        ScriptDefinitionPrintCSVHeader(scriptFile);
+
+                        readTarray(ScriptDefinition, scripts, entryNum, file);
+
+                        for (int i = 0; i < entryNum; i++) {
+                            readStringAt(name, scripts[i].nameOffset, file);
+                            ScriptDefinitionPrintCSV(scriptFile, scripts[i], name);
+                        }
+
+                        fclose(scriptFile);
                         fseek(file, chunkLast, SEEK_SET);
                     } else {
                         chdir("./chunk");

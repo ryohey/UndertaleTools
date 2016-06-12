@@ -126,8 +126,16 @@ extern void BackgroundPrintCSV(FILE *file, Background b, int room) {
 
 typedef struct {
     uint32_t nameOffset;
-    uint32_t id;
+    int32_t id;
 } ScriptDefinition;
+
+extern void ScriptDefinitionPrintCSVHeader(FILE *file) {
+    fprintf(file, "name,id\n");
+}
+
+extern void ScriptDefinitionPrintCSV(FILE *file, ScriptDefinition d, char *name) {
+    fprintf(file, "%s,%d\n", name, d.id);
+}
 
 typedef struct {
     uint32_t nameOffset;
