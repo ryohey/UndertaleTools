@@ -83,6 +83,7 @@ static void usage(void) {
     fprintf(stderr, "usage: gmspack [-ae] [file]\n");
     exit(1);
 }
+
 #define dumpT(__DATA__, __FORMAT__, __SIZE__, __WRAP__) {\
     fprintf(stdout, "========");\
     for (long i = 0; i < __SIZE__; i++) {\
@@ -93,6 +94,11 @@ static void usage(void) {
     }\
     fprintf(stdout, "\n========\n");\
 }
+
+#define cmkdir(__NAME__) \
+    mkdir(__NAME__, 0755);\
+    chmod(__NAME__, 0755);\
+    chdir(__NAME__);
 
 static void dump32uint(uint32_t *values, long size, int wrap) {
     dumpT(values, "%x\t", size, wrap);
@@ -115,9 +121,7 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "cannot open file\n");
                 exit(1);
             }
-            mkdir("output", 0755);
-            chmod("output", 0755);
-            chdir("./output");
+            cmkdir("output");
 
             mkdir("chunk", 0755);
             chmod("chunk", 0755);
@@ -159,9 +163,7 @@ int main(int argc, char *argv[]) {
                         fclose(stringFile);
                         fseek(file, chunkLast, SEEK_SET);
                     } else if (strcmp(chunkName, "TXTR") == 0) {
-                        mkdir("texture", 0755);
-                        chmod("texture", 0755);
-                        chdir("./texture");
+                        cmkdir("texture");
 
                         readList(entryNum, entryOffsets, file);
                         fprintf(stdout, "%u texture files\n", entryNum);
@@ -177,9 +179,7 @@ int main(int argc, char *argv[]) {
                         chdir("..");
                         fseek(file, chunkLast, SEEK_SET);
                     } else if (strcmp(chunkName, "AUDO") == 0) {
-                        mkdir("audio", 0755);
-                        chmod("audio", 0755);
-                        chdir("./audio");
+                        cmkdir("audio");
 
                         readList(entryNum, entryOffsets, file);
                         fprintf(stdout, "%u audio files\n", entryNum);
@@ -212,9 +212,7 @@ int main(int argc, char *argv[]) {
                         fclose(spriteFile);
                         fseek(file, chunkLast, SEEK_SET);
                     } else if (strcmp(chunkName, "FONT") == 0) {
-                        mkdir("font", 0755);
-                        chmod("font", 0755);
-                        chdir("./font");
+                        cmkdir("fonts");
 
                         readList(entryNum, entryOffsets, file);
                         fprintf(stdout, "%u fonts\n", entryNum);
@@ -236,9 +234,8 @@ int main(int argc, char *argv[]) {
                         chdir("..");
                         fseek(file, chunkLast, SEEK_SET);
                     } else if (strcmp(chunkName, "ROOM") == 0) {
-                        mkdir("room", 0755);
-                        chmod("room", 0755);
-                        chdir("./room");
+                        cmkdir("rooms");
+
                         readList(entryNum, entryOffsets, file);
                         fprintf(stdout, "%u rooms\n", entryNum);
 
