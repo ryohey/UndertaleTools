@@ -348,16 +348,3 @@ extern void PathPointPrintCSVHeader(FILE *file) {
 extern void PathPointPrintCSV(FILE *file, PathPoint p, int path) {
     fprintf(file, "%d,%f,%f,%f\n", path, p.x, p.y, p.speed);
 }
-
-typedef struct {
-    uint32_t nameOffset;
-    uint32_t size;
-    uint32_t unknown1; // always 1
-    uint32_t bytecodeOffset;
-    uint32_t unknown2; // always 0
-} CodeEntry;
-
-typedef struct {
-    int16_t unknown1A, unknown1B;
-    int16_t unknown2A, unknown2B;
-} CodeContent;
