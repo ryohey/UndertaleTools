@@ -417,6 +417,32 @@ int main(int argc, char *argv[]) {
 
                         fclose(scriptFile);
                         fseek(file, chunkLast, SEEK_SET);
+                    } else if (strcmp(chunkName, "CODE") == 0) {
+                        mkdir("code", 0755);
+                        chmod("code", 0755);
+                        chdir("./code");
+
+                        readList(entryNum, entryOffsets, file);
+                        uint32_t remain = entryOffsets[0] - ftell(file);
+                        fprintf(stdout, "%u codes (%u) %u %u\n", entryNum, ftell(file), entryOffsets[0], remain / entryNum);
+
+                        readTarray(CodeContent, contents, entryNum, file);
+
+                        for (int i = 0; i < entryNum; i++) {   
+                            // fprintf(stdout, "%d\n", contents[i].unknown3);
+
+                            fseek(file, entryOffsets[i], SEEK_SET);
+                            readT(CodeEntry, code, file);
+
+                            readStringAt(name, code.nameOffset, file);
+
+                            fseek(file, code.bytecodeOffset, SEEK_SET);
+                            readBytes(bytecode, code.size, file);
+                            
+                            //fprintf(stdout, "%s %u [%u] %s\n", name, code.size, code.bytecodeOffset, bytecode);
+                        }
+
+                        fseek(file, chunkLast, SEEK_SET);
                     } else {
                         chdir("./chunk");
                         copyToFile(file, chunk.size, "%s.chunk", chunkName);
