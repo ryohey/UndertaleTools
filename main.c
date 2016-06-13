@@ -215,34 +215,20 @@ int main(int argc, char *argv[]) {
                         readList(entryNum, entryOffsets, file);
                         fprintf(stdout, "%u fonts\n", entryNum);
 
-                        FILE *fontFile = fopen("font.csv", "wb");
-                        FontPrintCSVHeader(fontFile);
-
                         for (int i = 0; i < entryNum; i++) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Font, font, file);
                             readList(glyphCount, glyphOffsets, file);
+                            readTarray(Glyph, glyphs, glyphCount, file);
                             
                             readStringAt(fileName, font.fileNameOffset, file);
                             readStringAt(name, font.nameOffset, file);
 
-                            FontPrintCSV(fontFile, font, fileName, name);
-
-                            // read glyph
-
-                            openFile(glyphFile, "wb", "glyph%d.csv", i);
-                            GlyphPrintCSVHeader(glyphFile);
-
-                            for (int n = 0; n < glyphCount; n++) {
-                                fseek(file, glyphOffsets[n], SEEK_SET);
-                                readT(Glyph, glyph, file);
-                                GlyphPrintCSV(glyphFile, glyph);
-                            }
-
-                            fclose(glyphFile);
+                            openFile(fontFile, "wb", "%s.font.gmx", fileName)
+                            writeFontGMX(fontFile, font, name, glyphs, glyphCount);
+                            fclose(fontFile);
                         }
 
-                        fclose(fontFile);
                         chdir("..");
                         fseek(file, chunkLast, SEEK_SET);
                     } else if (strcmp(chunkName, "ROOM") == 0) {

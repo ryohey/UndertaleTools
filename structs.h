@@ -48,9 +48,9 @@ extern void SpritePrintCSV(FILE *file, Sprite s, char *name) {
 typedef struct {
     uint32_t fileNameOffset;
     uint32_t nameOffset;
-    uint32_t pointSize;
-    uint32_t isBold;
-    uint32_t isItalic;
+    int32_t pointSize;
+    int32_t isBold;
+    int32_t isItalic;
     char antiAliasMode;
     char charset;
     int32_t texturePageId;
@@ -83,6 +83,36 @@ extern void GlyphPrintCSVHeader(FILE *file) {
 
 extern void GlyphPrintCSV(FILE *file, Glyph g) {
     fprintf(file, "%u,%u,%u,%u,%u,%u,%u\n", g.keyCode, g.x, g.y, g.width, g.height, g.shift, g.offset);
+}
+
+#define XMLBool(__VAR__) (__VAR__ ? -1 : 0)
+
+extern void writeFontGMX(FILE *file, Font f, char *fontName, Glyph *glyphs, int glyphCount) {
+    fprintf(file, "<font>\n");
+    fprintf(file, "\t<name>%s</name>\n", fontName);
+    fprintf(file, "\t<size>%d</size>\n", f.pointSize);
+    fprintf(file, "\t<bold>%d</bold>\n", XMLBool(f.isBold));
+    fprintf(file, "\t<italic>%d</italic>\n", XMLBool(f.isItalic));
+
+    fprintf(file, "\t<glyphs>\n");
+    for (int i = 0; i < glyphCount; i++) {
+        Glyph g = glyphs[i];
+        fprintf(file, "\t\t<glyph character=\"%u\" x=\"%u\" y=\"%u\" w=\"%u\" h=\"%u\" shift=\"%u\" offset=\"%u\"/>\n",
+            g.keyCode, g.x, g.y, g.width, g.height, g.shift, g.offset
+            );
+    }
+    fprintf(file, "\t</glyphs>\n");
+
+    // unsupported 
+    fprintf(file, "\t<kerningPairs/>\n");
+    fprintf(file, "\t<image>%s</image>\n", "");
+    fprintf(file, "\t<charset>%d</charset>\n", 1);
+    fprintf(file, "\t<aa>%d</aa>\n", 0);
+    fprintf(file, "\t<includeTTF>%d</includeTTF>\n", 0);
+    fprintf(file, "\t<TTFName>%s</TTFName>\n", "");
+    fprintf(file, "\t<texgroups><texgroup0>0</texgroup0></texgroups>\n");
+    fprintf(file, "\t<ranges><range0>32,127</range0></ranges>\n");
+    fprintf(file, "</font>\n");
 }
 
 typedef struct {
