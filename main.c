@@ -75,6 +75,10 @@
     read32(__SIZE_VAR__, __FILE__);\
     read32array(__ARRAY_VAR__, __SIZE_VAR__, __FILE__);
 
+#define readListObjects(__TYPE__, __VAR__, __FILE__) \
+    readList(__VAR__ ## Size, __VAR__ ## Offsets, __FILE__);\
+    readTarray(__TYPE__, __VAR__, __VAR__ ## Size, __FILE__);
+
 static void usage(void) {
     fprintf(stderr, "usage: gmspack [-ae] [file]\n");
     exit(1);
@@ -225,7 +229,7 @@ int main(int argc, char *argv[]) {
                             readStringAt(name, font.nameOffset, file);
 
                             openFile(fontFile, "wb", "%s.font.gmx", fileName)
-                            writeFontGMX(fontFile, font, name, glyphs, glyphCount);
+                            writeFontXML(fontFile, font, name, glyphs, glyphCount);
                             fclose(fontFile);
                         }
 
@@ -235,19 +239,6 @@ int main(int argc, char *argv[]) {
                         mkdir("room", 0755);
                         chmod("room", 0755);
                         chdir("./room");
-
-                        FILE *roomFile = fopen("room.csv", "wb");
-                        FILE *bgFile = fopen("background.csv", "wb");
-                        FILE *viewFile = fopen("view.csv", "wb");
-                        FILE *objFile = fopen("object.csv", "wb");
-                        FILE *tileFile = fopen("tile.csv", "wb");
-
-                        RoomPrintCSVHeader(roomFile);
-                        BackgroundPrintCSVHeader(bgFile);
-                        ViewPrintCSVHeader(viewFile);
-                        RoomObjectPrintCSVHeader(objFile);
-                        TilePrintCSVHeader(tileFile);
-
                         readList(entryNum, entryOffsets, file);
                         fprintf(stdout, "%u rooms\n", entryNum);
 
@@ -255,52 +246,25 @@ int main(int argc, char *argv[]) {
                             fseek(file, entryOffsets[i], SEEK_SET);
                             readT(Room, room, file);
 
-                            {
-                                readList(num, offsets, file);
-                                readTarray(Background, arr, num, file);
+                            readListObjects(Background, backgrounds, file);
+                            readListObjects(View, views, file);
+                            readListObjects(RoomObject, objects, file);
+                            readListObjects(Tile, tiles, file);
 
-                                for (int n = 0; n < num; n++) {
-                                    BackgroundPrintCSV(bgFile, arr[n], i);
-                                }
-                            }
-
-                            {
-                                readList(num, offsets, file);
-                                readTarray(View, arr, num, file);
-
-                                for (int n = 0; n < num; n++) {
-                                    ViewPrintCSV(viewFile, arr[n], i);
-                                }
-                            }
-
-                            {
-                                readList(num, offsets, file);
-                                readTarray(RoomObject, arr, num, file);
-
-                                for (int n = 0; n < num; n++) {
-                                    RoomObjectPrintCSV(objFile, arr[n], i);
-                                }
-                            }
-                        
-                            {
-                                readList(num, offsets, file);
-                                readTarray(Tile, arr, num, file);
-
-                                for (int n = 0; n < num; n++) {
-                                    TilePrintCSV(tileFile, arr[n], i);
-                                }
-                            }
-                        
                             readStringAt(name, room.nameOffset, file);
                             readStringAt(caption, room.captionOffset, file);
+
+                            openFile(roomFile, "wb", "%s.room.gmx", name);
+                            writeRoomXML(roomFile, room, caption, 
+                                backgrounds, NULL, backgroundsSize, 
+                                views, NULL, viewsSize,
+                                objects, NULL, objectsSize,
+                                tiles, tilesSize);
+                            fclose(roomFile);
+
                             RoomPrintCSV(roomFile, room, name, caption);
                         }
 
-                        fclose(roomFile);
-                        fclose(bgFile);
-                        fclose(viewFile);
-                        fclose(objFile);
-                        fclose(tileFile);
                         chdir("..");
                         fseek(file, chunkLast, SEEK_SET);
                     } else if (strcmp(chunkName, "SOND") == 0) {

@@ -87,7 +87,7 @@ extern void GlyphPrintCSV(FILE *file, Glyph g) {
 
 #define XMLBool(__VAR__) (__VAR__ ? -1 : 0)
 
-extern void writeFontGMX(FILE *file, Font f, char *fontName, Glyph *glyphs, int glyphCount) {
+extern void writeFontXML(FILE *file, Font f, char *fontName, Glyph *glyphs, int glyphCount) {
     fprintf(file, "<font>\n");
     fprintf(file, "\t<name>%s</name>\n", fontName);
     fprintf(file, "\t<size>%d</size>\n", f.pointSize);
@@ -377,4 +377,107 @@ extern void PathPointPrintCSVHeader(FILE *file) {
 
 extern void PathPointPrintCSV(FILE *file, PathPoint p, int path) {
     fprintf(file, "%d,%f,%f,%f\n", path, p.x, p.y, p.speed);
+}
+
+extern void writeRoomXML(FILE *file, Room r, char *caption, 
+    Background *backgrounds, char **backgroundNames, int backgroundCount, 
+    View *views, char **viewNames, int viewCount, 
+    RoomObject *objects, char **objectNames, int objectCount, 
+    Tile *tiles, int tileCount) {
+
+    fprintf(file, "<room>\n");
+    fprintf(file, "\t<caption>%s</caption>\n", caption);
+    fprintf(file, "\t<width>%d</width>\n", r.size.width);
+    fprintf(file, "\t<height>%d</height>\n", r.size.height);
+    fprintf(file, "\t<vsnap>%d</vsnap>\n", 32);
+    fprintf(file, "\t<hsnap>%d</hsnap>\n", 32);
+    fprintf(file, "\t<isometric>%d</isometric>\n", 0);
+    fprintf(file, "\t<speed>%d</speed>\n", r.speed);
+    fprintf(file, "\t<persistent>%d</persistent>\n", XMLBool(r.isPersistent));
+    fprintf(file, "\t<colour>%u</colour>\n", r.color);
+    fprintf(file, "\t<showcolour>%d</showcolour>\n", XMLBool(r.isDrawBackgroundColor));
+    fprintf(file, "\t<code></code>\n");
+    fprintf(file, "\t<enableViews>%u</enableViews>\n", 0);
+    fprintf(file, "\t<clearViewBackground>%d</clearViewBackground>\n", -1);
+    fprintf(file, "\t<clearDisplayBuffer>%d</clearDisplayBuffer>\n", -1);
+
+    // makerSettings
+    fprintf(file, "\t<makerSettings>\n");
+    fprintf(file, "\t\t<isSet>-1</isSet>\n");
+    fprintf(file, "\t\t<w>1283</w>\n");
+    fprintf(file, "\t\t<h>798</h>\n");
+    fprintf(file, "\t\t<showGrid>0</showGrid>\n");
+    fprintf(file, "\t\t<showObjects>-1</showObjects>\n");
+    fprintf(file, "\t\t<showTiles>-1</showTiles>\n");
+    fprintf(file, "\t\t<showBackgrounds>-1</showBackgrounds>\n");
+    fprintf(file, "\t\t<showForegrounds>-1</showForegrounds>\n");
+    fprintf(file, "\t\t<showViews>0</showViews>\n");
+    fprintf(file, "\t\t<deleteUnderlyingObj>0</deleteUnderlyingObj>\n");
+    fprintf(file, "\t\t<deleteUnderlyingTiles>-1</deleteUnderlyingTiles>\n");
+    fprintf(file, "\t\t<page>1</page>\n");
+    fprintf(file, "\t\t<xoffset>0</xoffset>\n");
+    fprintf(file, "\t\t<yoffset>0</yoffset>\n");
+    fprintf(file, "\t</makerSettings>\n");
+
+    fprintf(file, "\t<backgrounds>\n");
+    for (int i = 0; i < backgroundCount; i++) {
+        Background b = backgrounds[i];
+        char *name = "";//backgroundNames[i];
+        fprintf(file, "\t\t<background visible=\"%d\" foreground=\"%d\" name=\"%s\" x\"%d\" y=\"%d\" htiled=\"%d\" vtiled=\"%d\" hspeed=\"%d\" vspeed=\"%d\" stretch=\"%d\"/>\n",
+                XMLBool(b.isEnabled), XMLBool(b.isForeground), name, 
+                b.position.x, b.position.y, 
+                XMLBool(b.isTileX), XMLBool(b.isTileY),
+                b.speed.x, b.speed.y,
+                XMLBool(b.isStretch) 
+            );
+    }
+    fprintf(file, "\t</backgrounds>\n");
+
+    fprintf(file, "\t<views>\n");
+    for (int i = 0; i < viewCount; i++) {
+        View v = views[i];
+        char *name = "";//viewNames[i];
+        fprintf(file, "\t\t<view visible=\"%d\" objName=\"%s\" xview=\"%d\" yview=\"%d\" wview=\"%d\" hview=\"%d\" xport=\"%d\" yport=\"%d\" wport=\"%d\" hport=\"%d\" hborder=\"%d\" vborder=\"%d\" hspeed=\"%d\" vspeed=\"%d\"/>\n",
+                XMLBool(v.isEnabled), name, 
+                v.position.x, v.position.y, 
+                v.size.width, v.size.height,
+                v.portPosition.x, v.portPosition.y,
+                v.portSize.width, v.portSize.height,
+                v.border.x, v.border.y,
+                v.speed.x, v.speed.y
+            );
+    }
+    fprintf(file, "\t</views>\n");
+
+    fprintf(file, "\t<instances>\n");
+    for (int i = 0; i < objectCount; i++) {
+        RoomObject o = objects[i];
+        char name[1000];
+        char *objName = "";//objectNames[i];
+        sprintf(name, "inst_%x", o.instanceId);
+        fprintf(file, "\t\t<instance objName=\"%s\" x=\"%d\" y=\"%d\" name=\"%s\" locked=\"%d\" code=\"\" scaleX=\"%f\" scaleY=\"%f\" colour=\"%u\" rotation=\"%f\"/>\n",
+                objName,
+                o.position.x, o.position.y, 
+                name,
+                0,
+                o.scale.x,
+                o.scale.y,
+                o.color,
+                o.rotation
+            );
+    }
+    fprintf(file, "\t</instances>\n");
+
+    // TODO: add tile
+
+    fprintf(file, "\t<PhysicsWorld>%d</PhysicsWorld>\n", r.world);
+    fprintf(file, "\t<PhysicsWorldTop>%d</PhysicsWorldTop>\n", r.bounds.top);
+    fprintf(file, "\t<PhysicsWorldLeft>%d</PhysicsWorldLeft>\n", r.bounds.left);
+    fprintf(file, "\t<PhysicsWorldRight>%d</PhysicsWorldRight>\n", r.bounds.right);
+    fprintf(file, "\t<PhysicsWorldBottom>%d</PhysicsWorldBottom>\n", r.bounds.bottom);
+    fprintf(file, "\t<PhysicsWorldGravityX>%f</PhysicsWorldGravityX>\n", r.gravity.x);
+    fprintf(file, "\t<PhysicsWorldGravityY>%f</PhysicsWorldGravityY>\n", r.gravity.y);
+    fprintf(file, "\t<PhysicsWorldPixToMeters>%d</PhysicsWorldPixToMeters>\n", r.metersPerPixel);
+
+    fprintf(file, "</room>\n");
 }
